@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP3 转 AMR 高性能转换器</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #1e293b;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            margin-bottom: -2px;
+        }
+        
+        .panel {
+            display: none;
+        }
+        .panel.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+        .upload-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+        .url-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            box-sizing: border-box; 
+            transition: border-color 0.2s;
+        }
+        .url-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+        .btn:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            min-height: 1.2em;
+        }
+        .success { color: #059669; }
+        .error { color: #dc2626; }
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .file-name {
+            margin-top: 0.5rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 MP3 转 AMR 转换器</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('file')">上传文件</div>
+            <div class="tab" onclick="switchTab('url')">在线链接</div>
+        </div>
+
+        <!-- 文件上传面板 -->
+        <div id="panel-file" class="panel active">
+            <div class="upload-area" id="dropZone">
+                <input type="file" id="fileInput" accept=".mp3">
+                <div id="uploadText">
+                    点击或拖拽 MP3 文件到此处
+                </div>
+                <div class="file-name" id="fileName"></div>
+            </div>
+            <button class="btn" id="convertFileBtn" disabled>开始上传转换</button>
+        </div>
+
+        <!-- 链接转换面板 -->
+        <div id="panel-url" class="panel">
+            <div class="input-group">
+                <label for="urlInput">输入 MP3 音频链接：</label>
+                <input type="text" id="urlInput" class="url-input" placeholder="http://example.com/music.mp3">
+            </div>
+            <button class="btn" id="convertUrlBtn">开始在线转换</button>
+        </div>
+        
+        <div class="status">
+            <div class="spinner" id="spinner"></div>
+            <div id="statusText"></div>
+            <!-- 新增：手动下载区域 -->
+            <div id="downloadArea" style="display:none; margin-top: 1rem;">
+                <a id="manualDownloadBtn" class="btn" style="background-color: #059669; display: inline-block; text-decoration: none;">
+                    📥 点击手动下载文件
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const urlInput = document.getElementById('urlInput');
+        const convertFileBtn = document.getElementById('convertFileBtn');
+        const convertUrlBtn = document.getElementById('convertUrlBtn');
+        
+        // Common Elements
+        const statusText = document.getElementById('statusText');
+        const spinner = document.getElementById('spinner');
+        const downloadArea = document.getElementById('downloadArea');
+        const manualDownloadBtn = document.getElementById('manualDownloadBtn');
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            // Hide all panels
+            document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            
+            // Show target panel
+            document.getElementById(`panel-${tabName}`).classList.add('active');
+            
+            // Activate tab
+            const tabs = document.querySelectorAll('.tab');
+            if (tabName === 'file') {
+                tabs[0].classList.add('active');
+            } else {
+                tabs[1].classList.add('active');
+            }
+
+            // Clear status when switching
+            statusText.textContent = '';
+            statusText.className = 'status';
+            downloadArea.style.display = 'none';
+        }
+
+        // File Selection Handling
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = `已选择: ${file.name}`;
+                convertFileBtn.disabled = false;
+            } else {
+                fileNameDisplay.textContent = '';
+                convertFileBtn.disabled = true;
+            }
+        });
+
+        // Drag and Drop Handling
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.style.borderColor = 'var(--primary-color)';
+            dropZone.style.backgroundColor = '#eff6ff';
+        }
+
+        function unhighlight(e) {
+            dropZone.style.borderColor = '#cbd5e1';
+            dropZone.style.backgroundColor = '';
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            
+            // Trigger change event manually
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        }
+
+        // Click Handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        convertFileBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Generate default filename
+            const defaultName = file.name.replace(/\.[^/.]+$/, "") + ".amr";
+            
+            handleConversion('/upload', formData, defaultName);
+        });
+
+        convertUrlBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('请输入有效的 URL');
+                return;
+            }
+
+            // Backend expects form data for URL
+            const params = new URLSearchParams();
+            params.append('url', url);
+            
+            handleConversion('/convert-url', params);
+        });
+
+        // Core Conversion Handler
+        async function handleConversion(endpoint, body, defaultFilename) {
+            // Lock UI
+            convertFileBtn.disabled = true;
+            convertUrlBtn.disabled = true;
+            spinner.style.display = 'block';
+            downloadArea.style.display = 'none'; // 隐藏之前的下载按钮
+            statusText.textContent = "正在处理中，请稍候...";
+            statusText.className = 'status';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: body
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || '转换失败，服务器返回错误');
+                }
+
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.message || '转换失败');
+                }
+
+                const downloadUrl = data.url;
+                const downloadName = data.name;
+
+                // 1. 尝试自动下载
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = downloadName; // 这里的 download 属性虽然可能被忽略，但最好还是加上
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // 2. 显示手动下载按钮 (手机端救星)
+                manualDownloadBtn.href = downloadUrl;
+                // 注意：对于直接链接下载，manualDownloadBtn 最好不要加 download 属性，或者让浏览器自己处理
+                manualDownloadBtn.setAttribute('download', downloadName); 
+                downloadArea.style.display = 'block';
+
+                // 3. 如果有 MP3 链接，显示额外的 MP3 下载按钮
+                const existingMp3Btn = document.getElementById('mp3DownloadBtn');
+                if (existingMp3Btn) existingMp3Btn.remove(); // 清理旧按钮
+
+                if (data.mp3Url) {
+                    const mp3Btn = document.createElement('a');
+                    mp3Btn.id = 'mp3DownloadBtn';
+                    mp3Btn.href = data.mp3Url;
+                    mp3Btn.className = 'btn';
+                    mp3Btn.style.backgroundColor = '#3b82f6'; // 蓝色背景区分
+                    mp3Btn.style.display = 'inline-block';
+                    mp3Btn.style.marginTop = '0.5rem';
+                    mp3Btn.style.textDecoration = 'none';
+                    mp3Btn.innerHTML = '🎵 点击手动下载 MP3';
+                    mp3Btn.setAttribute('download', data.mp3Name);
+                    
+                    downloadArea.appendChild(mp3Btn);
+                }
+
+                statusText.textContent = "✅ 转换成功！如果未自动下载，请点击下方按钮";
+                statusText.className = 'status success';
+            } catch (error) {
+                console.error(error);
+                statusText.textContent = "❌ 转换失败: " + error.message;
+                statusText.className = 'status error';
+            } finally {
+                spinner.style.display = 'none';
+                convertFileBtn.disabled = false;
+                convertUrlBtn.disabled = false;
+            }
+        }
+
+    </script>
+</body>
+</html>
