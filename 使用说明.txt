@@ -1,5 +1,5 @@
 使用说明书
-
+核心文件下载地址(与项目放到同一级目录)：https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
 1. 上传文件：
    请将本目录下的所有文件（main.go, go.mod, index.html, install.sh）上传到你的 Debian 12 服务器上的任意目录，例如 /root/mp3toamr/
 
@@ -22,5 +22,6 @@
 注意：
 - 确保服务器防火墙放行了 8080 端口。
 - 如果使用的是云服务器（如阿里云、腾讯云），记得在安全组里开放 8080 端口。
+
 
 
